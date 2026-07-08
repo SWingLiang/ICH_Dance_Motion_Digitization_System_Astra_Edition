@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ICH Dance Motion Digitization System</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Astra RGB-D + OpenPose Edition</p>
+      <h1>ICH Dance Motion Digitization System</h1>
+      <p class="subtitle">Local web console for low-cost intangible cultural heritage motion capture, 3D reconstruction, optimization, and Blender export.</p>
+      <div class="session-panel">
+        <label for="sessionId">Session ID</label>
+        <input id="sessionId" value="demo_session_001" />
+        <button onclick="refreshFiles()">Refresh Files</button>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <span class="step">Step 1</span>
+        <h2>Device Test</h2>
+        <p>Check Astra RGB-D camera access and generate mock RGB/depth test frames.</p>
+        <button onclick="runTask('/api/device/test', {session_id: getSessionId()})">Test Astra</button>
+      </article>
+
+      <article class="card">
+        <span class="step">Step 2</span>
+        <h2>Capture RGB-D Motion</h2>
+        <p>Create a session folder and save RGB-D metadata. V0.1 uses mock capture.</p>
+        <div class="row">
+          <label>Duration</label>
+          <input id="duration" type="number" min="1" value="10" />
+          <label>FPS</label>
+          <input id="fps" type="number" min="1" value="30" />
+        </div>
+        <button onclick="runTask('/api/capture/start', {session_id: getSessionId(), duration: Number(document.getElementById('duration').value), fps: Number(document.getElementById('fps').value)})">Start Capture</button>
+      </article>
+
+      <article class="card">
+        <span class="step">Step 3</span>
+        <h2>Run OpenPose</h2>
+        <p>Run BODY_25 pose analysis. V0.1 writes example keypoint JSON files.</p>
+        <div class="row">
+          <label>Model</label>
+          <select id="model">
+            <option>BODY_25</option>
+            <option>COCO</option>
+            <option>MPI</option>
+          </select>
+          <label><input id="useGpu" type="checkbox" checked /> GPU</label>
+        </div>
+        <button onclick="runTask('/api/openpose/analyze', {session_id: getSessionId(), model: document.getElementById('model').value, use_gpu: document.getElementById('useGpu').checked})">Analyze Pose</button>
+      </article>
+
+      <article class="card">
+        <span class="step">Step 4</span>
+        <h2>Reconstruct 3D Coordinates</h2>
+        <p>Fuse 2D keypoints with depth values to produce x, y, z coordinates.</p>
+        <button onclick="runTask('/api/reconstruct/3d', {session_id: getSessionId()})">2D + Depth → 3D</button>
+      </article>
+
+      <article class="card">
+        <span class="step">Step 5</span>
+        <h2>Optimize Motion Data</h2>
+        <p>Smooth temporal jitter and prepare a clean 3D motion CSV.</p>
+        <div class="row">
+          <label>Method</label>
+          <select id="method">
+            <option value="moving_average">Moving Average</option>
+            <option value="none">None</option>
+          </select>
+          <label>Window</label>
+          <input id="window" type="number" min="1" value="5" />
+        </div>
+        <button onclick="runTask('/api/motion/optimize', {session_id: getSessionId(), method: document.getElementById('method').value, window: Number(document.getElementById('window').value)})">Optimize</button>
+      </article>
+
+      <article class="card">
+        <span class="step">Step 6</span>
+        <h2>Export CSV / BVH / Blender</h2>
+        <p>Export research data and a simplified BVH motion file for Blender import.</p>
+        <div class="button-row">
+          <button onclick="runTask('/api/export/csv', {session_id: getSessionId()})">Export CSV</button>
+          <button onclick="runTask('/api/export/bvh', {session_id: getSessionId()})">Export BVH</button>
+        </div>
+      </article>
+    </section>
+
+    <section class="console">
+      <div>
+        <h2>Task Log</h2>
+        <pre id="log">Ready.</pre>
+      </div>
+      <div>
+        <h2>Output Files</h2>
+        <ul id="files"></ul>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
